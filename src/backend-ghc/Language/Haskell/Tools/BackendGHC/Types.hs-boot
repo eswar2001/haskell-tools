@@ -6,7 +6,7 @@ import HsTypes as GHC (HsType)
 import Language.Haskell.Tools.AST as AST (Ann, UType, Dom, RangeStage)
 import Language.Haskell.Tools.BackendGHC.Monad (Trf)
 import Language.Haskell.Tools.BackendGHC.Names (TransformName)
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 import SrcLoc as GHC (Located)
 import GHC.Stack (HasCallStack)
 

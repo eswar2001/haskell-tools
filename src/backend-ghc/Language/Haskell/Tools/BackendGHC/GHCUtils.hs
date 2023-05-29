@@ -25,7 +25,7 @@ import Outputable (Outputable(..), showSDocUnsafe)
 import PatSyn (patSynSig)
 import RdrName (RdrName, rdrNameOcc, nameRdrName)
 import SrcLoc
-import Type (TyThing(..), mkFunTys)
+import Type (TyThing(..), mkVisFunTys)
 
 class (OutputableBndrId name) => GHCName name where
   rdrName :: IdP name -> RdrName
@@ -71,7 +71,7 @@ getTopLevelId name =
       Just (AConLike (PatSynCon ps)) -> return $ Just $ mkVanillaGlobal name (createPatSynType ps)
       Just (ATyCon tc) -> return $ Just $ mkVanillaGlobal name (tyConKind tc)
       _ -> return Nothing
-  where createPatSynType patSyn = case patSynSig patSyn of (_, _, _, _, args, res) -> mkFunTys args res
+  where createPatSynType patSyn = case patSynSig patSyn of (_, _, _, _, args, res) -> mkVisFunTys args res
 
 hsGetNames' :: HsHasName a => a -> [GHC.Name]
 hsGetNames' = map fst . hsGetNames Nothing

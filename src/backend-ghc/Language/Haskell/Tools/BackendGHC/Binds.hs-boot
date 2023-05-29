@@ -9,7 +9,7 @@ import qualified Language.Haskell.Tools.AST as AST
 import Language.Haskell.Tools.BackendGHC.Monad (Trf)
 import Language.Haskell.Tools.BackendGHC.Names (TransformName(..))
 import SrcLoc as GHC (Located, SrcSpan)
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 
 trfLocalBinds :: (TransformName n r, n ~ GhcPass p)=> AnnKeywordId -> HsLocalBinds n -> Trf (AnnListG AST.ULocalBind (Dom r) RangeStage)
 trfWhereLocalBinds :: (TransformName n r, n ~ GhcPass p) => SrcSpan -> HsLocalBinds n -> Trf (AnnMaybeG AST.ULocalBinds (Dom r) RangeStage)

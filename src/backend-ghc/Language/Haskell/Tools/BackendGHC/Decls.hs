@@ -21,7 +21,7 @@ import Outputable as GHC (Outputable(..), showSDocUnsafe)
 import RdrName as GHC (RdrName, rdrNameOcc)
 import SrcLoc as GHC
 import TyCon as GHC (Role(..))
-import HsExtension (GhcPass, NoExt(..))
+import GHC.Hs.Extension (GhcPass, NoExt(..))
 
 import Control.Monad.Reader
 import Control.Reference

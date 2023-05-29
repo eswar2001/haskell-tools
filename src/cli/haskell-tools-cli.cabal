@@ -38,10 +38,10 @@ library
 executable ht-refact
   ghc-options:         -rtsopts
   build-depends:       base                       
-                     , split                     >= 0.2 && < 0.3
-                     , mtl                       >= 2.2 && < 2.3
-                     , directory                 >= 1.2  && < 1.4
-                     , filepath                  >= 1.4  && < 2.0
+                     , split               
+                     , mtl                
+                     , directory         
+                     , filepath         
                      , optparse-applicative      
                      , haskell-tools-cli
                      , haskell-tools-daemon      >= 1.1 && < 1.2
@@ -57,24 +57,24 @@ test-suite haskell-tools-cli-tests
   hs-source-dirs:      test
   main-is:             Main.hs
   build-depends:       base                       
-                     , tasty                     >= 0.11 && < 1.2
-                     , tasty-hunit               >= 0.9 && < 0.11
-                     , directory                 >= 1.2 && < 1.4
-                     , filepath                  >= 1.4 && < 2.0
-                     , knob                      >= 0.1 && < 0.2
-                     , bytestring                >= 0.10 && < 0.11
+                     , tasty                
+                     , tasty-hunit           
+                     , directory              
+                     , filepath                
+                     , knob                     
+                     , bytestring                
                      , haskell-tools-cli
                      , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
   default-language:    Haskell2010
 
 executable ht-test-stackage
   build-depends:       base                       
-                     , directory                 >= 1.2 && < 1.4
-                     , process                   >= 1.6 && < 1.7
-                     , split                     >= 0.2 && < 0.3
-                     , filepath                  >= 1.4 && < 2.0
+                     , directory               
+                     , process                  
+                     , split                    
+                     , filepath                 
                      , optparse-applicative      
-                     , Glob                      >= 0.9 && < 0.10
+                     , Glob                      
   ghc-options:         -threaded
   hs-source-dirs:      test-stackage
   main-is:             Main.hs

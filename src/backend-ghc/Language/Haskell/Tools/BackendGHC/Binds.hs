@@ -19,7 +19,7 @@ import HsTypes as GHC (SrcStrictness(..), HsWildCardBndrs(..), HsImplicitBndrs(.
 import Name as GHC (isSymOcc)
 import PlaceHolder as GHC (NameOrRdrName)
 import SrcLoc as GHC
-import HsExtension (GhcPass, IdP)
+import GHC.Hs.Extension (GhcPass, IdP)
 
 import Control.Monad.Reader (Monad(..), mapM, asks)
 import Data.List
@@ -86,7 +86,7 @@ trfMatchLhs name fb patss
                         _ -> nonFunOpLoc -- sometimes parenOpLoc is not an actual operator in parentheses, it just grabs
                                          -- a paren, so we need to check that it is actually what we seek
        closeLoc <- srcSpanStart <$> (combineSrcSpans <$> tokenLoc AnnEqual <*> tokenLoc AnnVbar)
-       let pats = filter (isGoodSrcSpan . getLoc) patss 
+       let pats = filter (isGoodSrcSpan . getLoc) patss
        args <- mapM trfPattern pats
        let (n, isInfix) = case fb of FunRhs n inf _ -> (n, inf == Infix)
                                      _ -> let token = if isSymOcc (occName @n name) && isGoodSrcSpan infixLoc then infixLoc else implicitIdLoc
@@ -98,7 +98,7 @@ trfMatchLhs name fb patss
 
 trfRhss :: (TransformName n r, n ~ GhcPass p) => [Located (GRHS n (LHsExpr n))] -> Trf (Ann AST.URhs (Dom r) RangeStage)
 trfRhss locs =
-  let a = filter (isGoodSrcSpan . getLoc) locs 
+  let a = filter (isGoodSrcSpan . getLoc) locs
       b = filter fun a
   in trfRhss' b
   where fun x =
@@ -141,7 +141,7 @@ getBindLocs (EmptyLocalBinds _) = noSrcSpan
 trfLocalBinds :: (TransformName n r, n ~ GhcPass p) => AnnKeywordId -> HsLocalBinds n -> Trf (AnnListG AST.ULocalBind (Dom r) RangeStage)
 trfLocalBinds token (HsValBinds _ (ValBinds _ bindss sigss))
   = let binds = filter (isGoodSrcSpan . getLoc) (bagToList bindss)
-        sigs = filter (isGoodSrcSpan . getLoc) sigss 
+        sigs = filter (isGoodSrcSpan . getLoc) sigss
     in makeIndentedListBefore " " (after token)
       (orderDefs <$> ((++) <$> mapM (copyAnnot AST.ULocalValBind . trfBind) binds
                            <*> mapM trfLocalSig sigs))

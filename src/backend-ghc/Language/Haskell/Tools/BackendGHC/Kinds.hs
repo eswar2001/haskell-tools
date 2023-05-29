@@ -17,7 +17,7 @@ import HsTypes as GHC
 import Name as GHC (occNameString, nameOccName, isWiredInName)
 import RdrName as GHC (RdrName(..))
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 import Outputable
 
 import Language.Haskell.Tools.AST (Ann, AnnMaybeG, Dom, RangeStage, HasNoSemanticInfo)
@@ -29,11 +29,11 @@ import {-# SOURCE #-} Language.Haskell.Tools.BackendGHC.Types (trfType')
 import Language.Haskell.Tools.BackendGHC.Utils
 
 
-trfKindSig :: (TransformName n r, Outputable (HsType n), Data (HsType n), n ~ GhcPass p) 
+trfKindSig :: (TransformName n r, Outputable (HsType n), Data (HsType n), n ~ GhcPass p)
            => Maybe (LHsKind n) -> Trf (AnnMaybeG AST.UKindConstraint (Dom r) RangeStage)
 trfKindSig = trfMaybe "" "" trfKindSig'
 
-trfKindSig' :: (TransformName n r, Outputable (HsType n), Data (HsType n), n ~ GhcPass p) 
+trfKindSig' :: (TransformName n r, Outputable (HsType n), Data (HsType n), n ~ GhcPass p)
             => Located (HsKind n) -> Trf (Ann AST.UKindConstraint (Dom r) RangeStage)
 trfKindSig' k = annLocNoSema (combineSrcSpans (getLoc k) <$> (tokenBefore (srcSpanStart (getLoc k)) AnnDcolon))
                              (AST.UKindConstraint <$> trfLocNoSema trfKind' k)
