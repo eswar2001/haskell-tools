@@ -13,7 +13,7 @@ import Language.Haskell.Tools.AST
 import Language.Haskell.Tools.Parser.ParseModule
 import Control.Monad (forM,when)
 import Data.Maybe (isJust,fromJust,fromMaybe,catMaybes)
-import System.Directory (doesDirectoryExist, getDirectoryContents,listDirectory,createDirectoryIfMissing)
+import System.Directory (doesDirectoryExist, getDirectoryContents,listDirectory,createDirectoryIfMissing,doesFileExist)
 import System.FilePath (takeExtension, (</>))
 import System.IO
 import qualified Data.List
@@ -164,34 +164,38 @@ getFucntionsStartAndEnd dir = do
     repos <- getVeryNextDirectoriesList dir
     mapM_ (\repo -> do
         modules <- getAllHaskellModules (dir <> "/" <> repo)
-        createDirectoryIfMissing True ("dump" <> "/" <> repo) 
+        createDirectoryIfMissing True ("dump" <> "/" <> repo)
         moduleNames <- forM modules $ \modulePath -> do
             threadDelay 100
             print ("reading file: " <> modulePath)
             contents <- getFileContent modulePath
             pure $ getModuleName contents
-        forM (filter removeIfUnderTests $ filter removeIfNothing $ zip modules moduleNames)
-                $ \(modulePath,moduleName) -> do
-                        eres <- try $ moduleParserGhc modulePath (fromJust moduleName)
-                        case eres of
-                            Left (err :: SomeException) -> appendFile ("dump" <> "/" <> repo <> "/" <> "error.log") (show err <> ": " <> modulePath)
-                            Right (res) -> do
-                                let groupedfunctions = groupBy (\(a1,b1,c1) (a2, b2, c2) ->  a1 == a2) res
-                                contents <- (lines) <$> getFileContent modulePath
-                                let functionsList = foldl' (\acc x ->
-                                                                    let (funcName,s,e) = foldl'
-                                                                                    (\(_,start,end) (funcName,start',end') ->
-                                                                                            let start'' = if start /= -1 && (start < start') then start else start'
-                                                                                                end'' = if end > end' then end else end'
-                                                                                            in (funcName,start'',end'')
-                                                                                    ) ("",-1,-1) x
-                                                                        functionWithComments = loopAndBreak contents s e
-                                                                    in acc <> [(funcName,s,e,functionWithComments)]
-                                                                ) [] groupedfunctions
-                                    withComments = filter (\(a,b,c,(code,comments)) -> (comments /= [])) functionsList
-                                    withoutComments = filter (\(a,b,c,(code,comments)) -> (comments == [])) functionsList
-                                    jsonObject = Object $ HM.fromList $ [((T.pack "withComments") ,toJSON withComments),((T.pack "withoutComments") ,toJSON withoutComments)]
-                                Data.ByteString.Lazy.writeFile ( "dump" <> "/" <> repo <> "/" <> (fromJust moduleName) <> ".json") (encode $ jsonObject)
+        mapM_  (\(modulePath,moduleName) -> do
+                    fileExists <- doesFileExist ("dump" <> "/" <> repo <> "/" <> (fromJust moduleName) <> ".json")
+                    if not fileExists
+                        then do 
+                            eres <- try $ moduleParserGhc modulePath (fromJust moduleName)
+                            case eres of
+                                Left (err :: SomeException) -> appendFile ("dump" <> "/" <> repo <> "/" <> "error.log") (show err <> ": " <> modulePath)
+                                Right (res) -> do
+                                    let groupedfunctions = groupBy (\(a1,b1,c1) (a2, b2, c2) ->  a1 == a2) res
+                                    threadDelay 100
+                                    contents <- (lines) <$> getFileContent modulePath
+                                    let functionsList = foldl' (\acc x ->
+                                                                        let (funcName,s,e) = foldl'
+                                                                                        (\(_,start,end) (funcName,start',end') ->
+                                                                                                let start'' = if start /= -1 && (start < start') then start else start'
+                                                                                                    end'' = if end > end' then end else end'
+                                                                                                in (funcName,start'',end'')
+                                                                                        ) ("",-1,-1) x
+                                                                            functionWithComments = loopAndBreak contents s e
+                                                                        in acc <> [(funcName,s,e,functionWithComments)]
+                                                                    ) [] groupedfunctions
+                                        withComments = filter (\(a,b,c,(code,comments)) -> (comments /= [])) functionsList
+                                        withoutComments = filter (\(a,b,c,(code,comments)) -> (comments == [])) functionsList
+                                        jsonObject = Object $ HM.fromList $ [((T.pack "withComments") ,toJSON withComments),((T.pack "withoutComments") ,toJSON withoutComments)]
+                                    Data.ByteString.Lazy.writeFile ( "dump" <> "/" <> repo <> "/" <> (fromJust moduleName) <> ".json") (encode $ jsonObject)
+                        else pure ()) (filter removeIfUnderTests $ filter removeIfNothing $ zip modules moduleNames)
         ) repos
     where
         safeIndex :: [a] -> Int -> Maybe a
