@@ -13,7 +13,10 @@ main :: IO ()
 main = do
     parserComb <- execParser (info opts idm)
     case parserComb of
-        Refact astParseConfig -> 
+        Module moduleConfig -> do
+            print moduleConfig
+            performAction moduleConfig
+        Refact astParseConfig ->
             case functionality astParseConfig of
                 FunctionDependency -> do
                     deps <- getFunctionDeps (modulePath astParseConfig) (moduleName astParseConfig)

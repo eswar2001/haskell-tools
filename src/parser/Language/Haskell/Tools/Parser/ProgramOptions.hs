@@ -13,7 +13,20 @@ data Options =
 data ASTRefactors = FunctionDependency | LetRefactoring | RemoveWildCards
   deriving (Show)
 
-data ParseConfig = Refact ASTParseConfig | SplitAndWrite WriteFileConfig
+data ModuleAction = MERGE | REMOVE | MODIFY
+  deriving (Show)
+
+data ParseConfig = Refact ASTParseConfig | SplitAndWrite WriteFileConfig | Module ModuleConfig
+
+data ModuleConfig =
+  ModuleConfig {
+    sourceModulePath :: String
+    , sourceModuleName :: String
+    , destinationModulePath :: String
+    , destinationModuleName :: String
+    , moduleAction :: ModuleAction
+  }
+  deriving (Show)
 
 data ASTParseConfig =
   ASTParseConfig
@@ -39,7 +52,20 @@ opts :: Parser ParseConfig
 opts =
       subparser (command "getFunDeps" $ (info (parserConfig FunctionDependency) (progDesc "Get the function dependency graph of a module")))
   <|> subparser (command "letRefactor" $ (info (parserConfig FunctionDependency) (progDesc "Multiple Let Refactoring")))
+  <|> subparser (command "mergeModule" $ (info (modifyModuleConfig MERGE) (progDesc "Merge source to destination")))
+  <|> subparser (command "removeModule" $ (info (modifyModuleConfig REMOVE) (progDesc "Remove source from destination")))
+  <|> subparser (command "modifyModule" $ (info (modifyModuleConfig MODIFY) (progDesc "modify source in destination")))
   <|> subparser (command "writeModSplits" $ (info writeFileConfig (progDesc "Split the grouped functions into modules")))
+
+modifyModuleConfig :: ModuleAction -> Parser ParseConfig
+modifyModuleConfig action =
+  Module
+  <$> (ModuleConfig
+  <$> (strOption (long "source-module-path" <> help "path to which module to read changes from"))
+  <*> (strOption (long "destination-module-path" <> help "path to which module to apply changes to"))
+  <*> (strOption (long "source-module-name" <> help "module name to read changes from"))
+  <*> (strOption (long "destination-module-name" <> help "module name to apply changes to"))
+  <*> (pure action))
 
 parserConfig :: ASTRefactors -> Parser ParseConfig
 parserConfig refactor =

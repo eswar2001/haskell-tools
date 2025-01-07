@@ -20,6 +20,7 @@ library
                      , Language.Haskell.Tools.Parser.SplitTypesInModule
                      , Language.Haskell.Tools.Parser.RemoveUnusedFuns
                      , Language.Haskell.Tools.Parser.FlowChange
+                     , Language.Haskell.Tools.Parser.Module
 
   other-modules:       Language.Haskell.Tools.Parser.GetFunctionBranching
 
