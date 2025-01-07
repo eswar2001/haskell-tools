@@ -155,10 +155,10 @@
             knob = {
               jailbreak = true;
             };
-            # unordered-containers = {
-            #   check = false;
-            #   haddock = false;
-            # };
+            network = {
+              check = false;
+              haddock = false;
+            };
             aeson = {
               jailbreak = true;
               check = false;
