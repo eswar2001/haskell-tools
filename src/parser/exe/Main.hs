@@ -4,6 +4,7 @@ module Main where
 
 import Language.Haskell.Tools.Parser.ProgramOptions
 import Language.Haskell.Tools.Parser.SplitModule
+import Language.Haskell.Tools.Parser.Module
 import Language.Haskell.Tools.Parser.LetRefactoring
 import Language.Haskell.Tools.Parser.RemoveWildCards
 import Options.Applicative
