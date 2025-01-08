@@ -15,6 +15,14 @@ import System.FilePath
 import GHC
 import Data.Typeable (cast)
 
+-- test = ModuleConfig {
+--     sourceModulePath = "/Users/eswar.tadiparth/Documents/juspay/euler-api-order/src/"
+--     , sourceModuleName = "QrGenerator"
+--     , destinationModulePath = "/Users/eswar.tadiparth/Documents/juspay/euler-api-order/src/"
+--     , destinationModuleName = "App"
+--     , moduleAction = REMOVE
+-- }
+
 performAction :: ModuleConfig -> IO ()
 performAction config = do
     case moduleAction config of
@@ -66,34 +74,42 @@ samePragma :: UFilePragma dom stage -> UFilePragma dom stage -> Bool
 samePragma p1 p2 = pragmaToString p1 == pragmaToString p2
 
 class HasName e where
-    extractName :: e (Dom GhcPs) SrcTemplateStage -> Maybe String
+    extractName :: e (Dom GhcPs) SrcTemplateStage -> Maybe (String, String)
 
 instance HasName UFilePragma where
     extractName pragma = case pragma of
         ULanguagePragma exts -> 
             case _annListElems exts of
-                (Ann _ (ULanguageExtension ext):_) -> Just $ "LANGUAGE:" ++ ext
+                (Ann _ (ULanguageExtension ext):_) -> Just $ ("LANGUAGE:" ++ ext,"ULanguageExtension")
                 _ -> Nothing
         UOptionsPragma str ->
             case str of
-                Ann _ (UStringNode opt) -> Just $ "OPTIONS:" ++ opt
+                Ann _ (UStringNode opt) -> Just $ ("OPTIONS:" ++ opt,"UOptionsPragma")
 
 instance HasName UImportDecl where
     extractName imp = case _importModule imp of
-        Ann _ (UModuleName name) -> Just name
+        Ann _ (UModuleName name) -> Just (name,"UModuleName")
 
 instance HasName UDecl where
     extractName decl = case decl of
-        UTypeDecl{_declHead = Ann _ (UDeclHead (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))))} -> 
-            Just name
-        UValueBinding (Ann _ (USimpleBind (Ann _ (UVarPat (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))))) _ _)) -> 
-            Just name
+        UTypeDecl{_declHead = Ann _ (UDeclHead (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))))} ->
+            Just (name,"UTypeDecl")
+        UValueBinding (Ann _ (USimpleBind (Ann _ (UVarPat (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))))) _ _)) ->
+            Just (name,"UValueBinding")
         UValueBinding (Ann _ (UFunBind (AnnListG _ ((Ann _ (UMatch (Ann _ (UNormalLhs (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))) _)) _ _)):_)))) -> 
-            Just name
-        UInstDecl _ (Ann _ rule) _ -> 
+            Just (name,"UValueBinding")
+        UTypeFamilyDecl{_declTypeFamily = Ann _ tf} ->
+            case _tfHead tf of
+                Ann _ (UDeclHead (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name))))))) -> Just (name,"UTypeFamilyDecl")
+        UTypeSigDecl{_declTypeSig = Ann _ sig} ->
+            case _tsName sig of
+                AnnListG _ [(Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name))))))] -> Just (name,"UTypeSigDecl")
+                AnnListG _ ((Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))):xs) -> Just (name,"UTypeSigDecl")
+                _ -> Nothing
+        UInstDecl _ (Ann _ rule) _ ->
             case rule of
                 UInstanceRule _ _ (Ann _ (UInstanceHeadCon (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))))) ->
-                    Just name
+                    Just (name,"UInstDecl")
                 _ -> Nothing
         _ -> Nothing
 
@@ -113,7 +129,10 @@ removeByName :: HasName e => [Ann e (Dom GhcPs) SrcTemplateStage] -> [Ann e (Dom
 removeByName source dest = filter (\d -> not $ any (hasSameName d) source) dest
 
 hasSameName :: HasName e => Ann e (Dom GhcPs) SrcTemplateStage -> Ann e (Dom GhcPs) SrcTemplateStage -> Bool
-hasSameName (Ann _ e1) (Ann _ e2) = extractName e1 == extractName e2
+hasSameName (Ann _ e1) (Ann _ e2) = 
+    case (extractName e1,extractName e2)of
+        (Just (x,_),Just (y,_)) -> x == y
+        _ -> False
 
 getImportName :: UImportDecl (Dom GhcPs) SrcTemplateStage -> String
 getImportName imp = case _importModule imp of
