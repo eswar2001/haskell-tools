@@ -16,11 +16,11 @@ import GHC
 import Data.Typeable (cast)
 
 -- test = ModuleConfig {
---     sourceModulePath = "/Users/eswar.tadiparth/Documents/juspay/euler-api-order/src/"
---     , sourceModuleName = "QrGenerator"
---     , destinationModulePath = "/Users/eswar.tadiparth/Documents/juspay/euler-api-order/src/"
---     , destinationModuleName = "App"
---     , moduleAction = REMOVE
+--     sourceModulePath = "/Users/eswar.tadiparth/Documents/juspay/coderefract/"
+--     , sourceModuleName = "A"
+--     , destinationModulePath = "/Users/eswar.tadiparth/Documents/juspay/coderefract/"
+--     , destinationModuleName = "B"
+--     , moduleAction = MERGE
 -- }
 
 performAction :: ModuleConfig -> IO ()
@@ -131,7 +131,7 @@ removeByName source dest = filter (\d -> not $ any (hasSameName d) source) dest
 hasSameName :: HasName e => Ann e (Dom GhcPs) SrcTemplateStage -> Ann e (Dom GhcPs) SrcTemplateStage -> Bool
 hasSameName (Ann _ e1) (Ann _ e2) = 
     case (extractName e1,extractName e2)of
-        (Just (x,_),Just (y,_)) -> x == y
+        (Just (x),Just (y)) -> x == y
         _ -> False
 
 getImportName :: UImportDecl (Dom GhcPs) SrcTemplateStage -> String
