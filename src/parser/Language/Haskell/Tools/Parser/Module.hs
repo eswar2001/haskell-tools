@@ -14,6 +14,7 @@ import Data.Maybe (mapMaybe)
 import System.FilePath
 import GHC
 import Data.Typeable (cast)
+import qualified Data.Map as Map
 
 -- test = ModuleConfig {
 --     sourceModulePath = "/Users/eswar.tadiparth/Documents/juspay/coderefract/"
@@ -59,7 +60,46 @@ removeModule (Ann _ fromMod) (Ann ll toMod) =
     in Ann ll (UModule pragmas (_modHead toMod) imports decls)
 
 modifyModule :: Ann UModule (Dom GhcPs) SrcTemplateStage -> Ann UModule (Dom GhcPs) SrcTemplateStage -> Ann UModule (Dom GhcPs) SrcTemplateStage
-modifyModule source dest = mergeModule source (removeModule source dest)
+modifyModule (Ann _ fromMod) (Ann ll toMod) =
+    let destImports = _modImports toMod
+        destDecls = _modDecl toMod
+        destPragmas = _filePragmas toMod
+        
+        -- Keep original source info/annotations which contain comments
+        updatedImports = modifyAnnListGKeepSource (_modImports fromMod) destImports
+        updatedDecls = modifyAnnListGKeepSource (_modDecl fromMod) destDecls
+        updatedPragmas = modifyAnnListGKeepSource (_filePragmas fromMod) destPragmas
+        
+    in Ann ll (UModule updatedPragmas (_modHead toMod) updatedImports updatedDecls)
+
+-- | Modify elements while preserving source info and comments
+modifyAnnListGKeepSource :: HasName e 
+                        => AnnListG e (Dom GhcPs) SrcTemplateStage 
+                        -> AnnListG e (Dom GhcPs) SrcTemplateStage 
+                        -> AnnListG e (Dom GhcPs) SrcTemplateStage
+modifyAnnListGKeepSource (AnnListG _ source) (AnnListG annot dest) = 
+    AnnListG annot (replaceDuplicatesKeepSource source dest)
+
+-- | Replace elements while preserving source info
+replaceDuplicatesKeepSource :: HasName e 
+                           => [Ann e (Dom GhcPs) SrcTemplateStage] 
+                           -> [Ann e (Dom GhcPs) SrcTemplateStage] 
+                           -> [Ann e (Dom GhcPs) SrcTemplateStage]
+replaceDuplicatesKeepSource source dest =
+    let -- Create map only for elements that have names
+        sourceMap = Map.fromList [(name, Ann srcAnnot e) 
+                                | Ann srcAnnot e <- source, 
+                                  Just name <- [extractName e]]
+        
+        replaceOrKeep d@(Ann destAnnot e) = 
+            case extractName e of
+                Just name -> case Map.lookup name sourceMap of
+                    -- Keep destination annotation (comments) but use source element
+                    Just (Ann _ sourceElem) -> Ann destAnnot sourceElem
+                    Nothing -> d
+                Nothing -> d
+            
+    in map replaceOrKeep dest
 
 pragmaToString :: UFilePragma dom stage -> String
 pragmaToString (ULanguagePragma exts) = 
