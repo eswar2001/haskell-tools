@@ -138,7 +138,7 @@ moduleParser modulePath moduleName = do
     dflags <- runGhc (Just libdir) getSessionDynFlags
     pp <- getCurrentDirectory
     modSum <- runGhc (Just libdir) $ loadModule (modulePath) moduleName
-    print $ showSDocUnsafe $ ppr modSum
+    -- print $ showSDocUnsafe $ ppr modSum
     y <- runGhc (Just libdir) $ parseModule modSum
     let annots = pm_annotations y
     valsss <- runGhc (Just libdir) $ runTrf (fst annots) (getPragmaComments $ snd annots) $ trfModule' modSum (pm_parsed_source y)

@@ -163,6 +163,9 @@
               jailbreak = true;
               check = false;
             };
+            network = {
+              check = false;
+            };
             # warp = {
             #   check = false;
             # };

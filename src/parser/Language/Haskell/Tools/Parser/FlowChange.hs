@@ -118,12 +118,41 @@ compareASTForFuns filePath moduleName' = do
     print y
 
 traverseOverUValBind :: Ann UDecl (Dom GhcPs) SrcTemplateStage -> Maybe (String, Ann UDecl (Dom GhcPs) SrcTemplateStage)
-traverseOverUValBind expr@(Ann _ (UValueBinding (FunctionBind' ex))) = do
-    let funName = mapMaybe (getFunctionNameFromValBind) ((ex) ^? biplateRef)
-    if not $ null funName then do
-        Just (head funName, expr)
-    else Nothing
-traverseOverUValBind expr = Nothing
+traverseOverUValBind expr@(Ann _ (UValueBinding (Ann _ bind))) = 
+    case bind of
+        -- Simple bindings like `x = 42`
+        USimpleBind pat _ _ -> 
+            case getPatternName pat of
+                Just name -> Just (name, expr)
+                Nothing -> Nothing
+                
+        -- Function bindings with multiple clauses
+        UFunBind matches -> 
+            case _annListElems matches of
+                (match:_) -> 
+                    case getFunctionName match of
+                        Just name -> Just (name, expr)
+                        Nothing -> Nothing
+                [] -> Nothing
+  where
+    getPatternName :: Ann UPattern (Dom GhcPs) SrcTemplateStage -> Maybe String
+    getPatternName (Ann _ pat) = case pat of
+        UVarPat (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))) -> Just name
+        _ -> Nothing
+        
+    getFunctionName :: Ann UMatch (Dom GhcPs) SrcTemplateStage -> Maybe String
+    getFunctionName (Ann _ (UMatch (Ann _ lhs) _ _)) = getLhsName lhs
+    
+    getLhsName :: UMatchLhs (Dom GhcPs) SrcTemplateStage -> Maybe String
+    getLhsName (UNormalLhs (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))) _) = Just name
+    getLhsName (UInfixLhs _ (Ann _ (UNormalOp (Ann _ (UQualifiedName _ (Ann _ (UNamePart name)))))) _ _) = Just name
+    getLhsName _ = Nothing
+-- traverseOverUValBind expr@(Ann _ (UTypeSigDecl (Ann _ sig))) =
+--     -- Also capture type signatures
+--     case _annListElems (_tsName sig) of
+--         (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart name))))):_) -> Just (name ++ "_type", expr)
+--         _ -> Nothing
+traverseOverUValBind _ = Nothing
 
 getFunctionNameFromValBind :: Ann UMatch (Dom GhcPs) SrcTemplateStage -> Maybe String
 getFunctionNameFromValBind expr@(Ann _ (UMatch (Ann _ (UNormalLhs (Ann _ (UNormalName (Ann _ (UQualifiedName _ (Ann _ (UNamePart ex)))))) ex1)) _ _)) = Just ex
